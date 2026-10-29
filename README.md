@@ -264,7 +264,13 @@ Sample response excerpt:
 - The API is read-only and unauthenticated, intended for a trusted internal network.
 
 ### What I'd Improve With More Time
-See the Reflection below ("If you had another day"): a persistent SQLite/SpatiaLite store with a paced background telemetry sync, downstream API keys, and a shared cache for multi-replica deployments.
+In the order I would do them:
+
+1. **Persist the data and trickle-sync telemetry.** Add a SQLite + SpatiaLite (or DuckDB) storage layer with a background worker that paces portal requests at about one per second. Inventory, hierarchy and geo queries are already instant, because the whole inventory loads in 3 requests. Telemetry is still fetched per meter on demand, since pre-fetching all 403 meters at startup would trip the portal's rate limit of roughly 110 requests per minute. Stored telemetry would let me answer fleet-wide questions directly in SQL, such as "total kWh per transformer or feeder in June 2026" or "all meters with voltage below 215 V".
+2. **Share state across instances.** The index, the telemetry cache and the portal session all live in process memory, so each serverless instance does its own first sync after a cold start. A shared cache (Redis or SQLite) would remove that delay and let several replicas share one portal session.
+3. **Protect my API.** Require API keys or OAuth bearer tokens on `/api/v1/*` and restrict `POST /api/v1/sync`. Today anyone who can reach the service can use it.
+4. **Remove the external dependencies.** Bundle the API-docs viewer and the fonts locally, and use a hosted or self-hosted tile source for the map instead of OpenStreetMap's free tile server, so the console works on an air-gapped utility network and under real traffic.
+5. **Give the dashboard some structure.** It is one hand-written file, which is fine at this size, but it would move to components and a build step if it grew.
 
 ---
 
