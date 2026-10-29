@@ -2,8 +2,6 @@
 
 This document describes how the legacy **Urja Meter Ops** portal (`https://urja-ops.flockenergy.tech`) works under the hood, how authentication and request signing operate, every internal endpoint exposed by the portal, and the 10 data/protocol quirks discovered during inspection.
 
-> **For the complete step-by-step Chrome DevTools MCP investigation log** (including the accessibility tree snapshot, decompiled SvelteKit bundle source code, and full 22-row anomaly & cross-tabulation tables), see **[`CHROME_DEVTOOLS_MCP_DISCOVERY.md`](./CHROME_DEVTOOLS_MCP_DISCOVERY.md)**.
-
 ---
 
 ## 1. Underlying Stack & Architecture
@@ -230,7 +228,7 @@ Five meters (`J100089`, `J100134`, `J100195`, `J100211`, `J100330`) return **9 r
   { "timestamp": "30/06/2026 00:00", "kwh": "",         "kvah": "13750.93", "voltR": "" }
 ]
 ```
-Any naive parser converting `""` to `0` (`Number("") === 0`) will falsely compute a massive negative consumption drop (`-12,732.34 kWh`) and a `0V` blackout on June 30! Our normalizer detects and filters these corrupted rows while recording them in `data.anomalies`.
+Any naive parser converting `""` to `0` (`Number("") === 0`) will falsely compute a massive negative consumption drop (`-12,732.34 kWh`) and a `0V` blackout on June 30! My normalizer detects and filters these corrupted rows while recording them in `data.anomalies`.
 
 ### Quirk 3: 22 Incomplete Hierarchy Nodes (Missing `code` or `name`)
 Across the 403 meters, **22 hierarchy nodes** have either an empty `code: ""` or an empty `name: ""`:
@@ -242,7 +240,7 @@ Across the 403 meters, **22 hierarchy nodes** have either an empty `code: ""` or
   - `circle` missing name: `J100218` (`C-01`), `J100248` (`C-03`), `J100306` (`C-03`), `J100370` (`C-05`), `J100371` (`C-06`)
   - `feeder` missing name: `J100162` (`F-003`), `J100257` (`F-018`), `J100372` (`F-013`)
 
-Because every code (`C-01..C-06`, `SS-01..SS-18`, `F-001..F-028`) maps 1-to-1 to a single canonical name across the remaining meters, our normalizer automatically heals all 22 records.
+Because every code (`C-01..C-06`, `SS-01..SS-18`, `F-001..F-028`) maps 1-to-1 to a single canonical name across the remaining meters, my normalizer automatically heals all 22 records.
 
 ### Quirk 4: Conflicting Transformer Name & `GN` Serial Prefix on `J100400`–`J100402`
 The final 3 meters on Page 21 (`J100400`, `J100401`, `J100402`) appear to have been appended from a separate batch:
@@ -258,7 +256,7 @@ Each of the 40 Distribution Transformers (`DT-001`–`DT-040`) has a single, det
 - `Substation`: `i % 18 + 1` (18 Substations: `SS-01..SS-18`)
 - `Feeder`: `i % 28 + 1` (28 Feeders: `F-001..F-028`)
 
-Consequently, if you key nodes solely by `code` (e.g. `D-01`), 54 intermediate nodes have multiple parent codes (forming a Directed Acyclic Graph). If you key nodes by their full path (or anchor at the DT level), it forms a strict tree. Our `/api/v1/hierarchy` endpoint exposes both representations and documents all 54 multi-parent nodes.
+Consequently, if you key nodes solely by `code` (e.g. `D-01`), 54 intermediate nodes have multiple parent codes (forming a Directed Acyclic Graph). If you key nodes by their full path (or anchor at the DT level), it forms a strict tree. My `/api/v1/hierarchy` endpoint exposes both representations and documents all 54 multi-parent nodes.
 
 ### Quirk 6: Serial Prefix vs. Manufacturer (`make`) Mismatch (323 of 403 Meters)
 For meters `J100000`–`J100399`, the 2-letter serial prefix (`SE`, `GE`, `AL`, `L&`, `HP`) was generated independently of the `make` column (`Secure`, `Genus`, `Allied`, `L&T`, `HPL`), matching only 77/400 times (19.25% ≈ random 1/5 chance). Only `J100400`–`J100402` (`GN` / `Genus`) are intentionally aligned.
@@ -267,7 +265,7 @@ For meters `J100000`–`J100399`, the 2-letter serial prefix (`SE`, `GE`, `AL`, 
 77 meters have serial numbers prefixed with `L&` (e.g. `L&84997` on `J100003`). Calling `/portal/meters/search?q=L&84997` without `encodeURIComponent` causes the server to parse `q=L` and `&84997=`, returning 167 meters matching `"L"` instead of the single meter `J100003`.
 
 ### Quirk 8: Upstream Rate Limiting (`HTTP 429`)
-Firing more than ~110 requests within a 60-second window triggers `HTTP 429 Too Many Requests`. By bootstrapping the entire 403-meter inventory + geo + hierarchy via a **single** signed `/portal/export?page=1` request (plus 2 `/portal/dts` pages), our service reduces startup load from 800+ requests to **3 requests**!
+Firing more than ~110 requests within a 60-second window triggers `HTTP 429 Too Many Requests`. By bootstrapping the entire 403-meter inventory + geo + hierarchy via a **single** signed `/portal/export?page=1` request (plus 2 `/portal/dts` pages), my service reduces startup load from 800+ requests to **3 requests**.
 
 ---
 
