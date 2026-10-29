@@ -117,9 +117,11 @@ flowchart LR
 
 ### Start the Server
 ```bash
-cd FLOCK-PROJECT
+git clone https://github.com/Trishgupta44/urja-meter-ops-api.git
+cd urja-meter-ops-api
 npm start
 ```
+There is no `npm install` step: the service has no dependencies.
 *(Optional)* Copy `.env.example` to `.env` to customize `PORT` (default `3000`), portal credentials, or cache TTLs.
 
 Once started, open:
