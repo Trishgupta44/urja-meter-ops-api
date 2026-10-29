@@ -1,0 +1,1008 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Urja — Jaipur meter network</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #f4f4ed;
+      --paper-2: #ebebe1;
+      --card: #fcfcf8;
+      --ink: #282c20;
+      --ink-2: #4a4f3e;
+      --muted: #6e7363;
+      --faint: #a5a999;
+      --line: rgba(40, 44, 32, 0.11);
+      --line-2: rgba(40, 44, 32, 0.2);
+
+      --lime: #d2ff00;
+      --lime-press: #c2eb00;
+
+      --ok: #4f8a10;
+      --ok-bg: #e4f0c6;
+      --bad: #d8402a;
+      --bad-bg: #fbe3de;
+      --off: #8f9484;
+      --off-bg: #e6e6db;
+      --warn: #b45309;
+      --warn-bg: #fdecd2;
+      --volt: #f26a1b;
+
+      --r: 20px;
+      --r-sm: 12px;
+      --shadow: 0 1px 0 rgba(40, 44, 32, 0.04), 0 14px 32px -18px rgba(40, 44, 32, 0.28);
+      --font: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --mono: 'DM Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { background: var(--paper); }
+    body {
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--ink);
+      background: var(--paper);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: clip;
+    }
+
+    /* Soft contour lines, echoing a topographic map */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.9;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='900' viewBox='0 0 1200 900' fill='none' stroke='%23282c20' stroke-opacity='0.07' stroke-width='1.2'><path d='M-40 220C140 120 300 330 470 240S790 40 940 150 1160 330 1260 250'/><path d='M-40 300C130 210 310 410 480 320S800 130 950 240 1170 410 1260 330'/><path d='M-40 380C120 300 320 490 490 400S810 220 960 330 1180 490 1260 410'/><path d='M-40 640C150 560 320 760 500 670S820 500 980 600 1170 740 1260 660'/><path d='M-40 720C140 650 330 830 510 750S830 590 990 680 1180 820 1260 740'/></svg>");
+      background-size: cover;
+      background-position: center;
+    }
+
+    a { color: inherit; }
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 8px; }
+    .hidden { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .skip { position: absolute; left: -999px; top: 8px; background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 999px; z-index: 100; }
+    .skip:focus { left: 8px; }
+
+    /* ---------- Top bar ---------- */
+    .topbar {
+      position: sticky; top: 0; z-index: 40;
+      background: rgba(244, 244, 237, 0.86);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar-inner {
+      max-width: 1320px; margin: 0 auto; padding: 12px 28px;
+      display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; font-size: 18px; letter-spacing: -0.02em; }
+    .brand-mark {
+      width: 34px; height: 34px; border-radius: 11px; background: var(--ink); color: var(--lime);
+      display: grid; place-items: center; font-weight: 700; font-size: 18px;
+    }
+    nav { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+    .nav-btn {
+      border: 0; background: transparent; padding: 9px 16px; border-radius: 999px;
+      font-weight: 500; color: var(--ink-2); transition: background .15s, color .15s;
+    }
+    .nav-btn:hover { background: var(--paper-2); }
+    .nav-btn[aria-current="page"] { background: var(--lime); color: var(--ink); font-weight: 700; }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 9px 18px;
+      font-weight: 600; text-decoration: none; border: 1.5px solid var(--ink); background: transparent;
+      transition: transform .12s, background .15s;
+    }
+    .btn:hover { background: var(--paper-2); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--lime); border-color: var(--lime); }
+    .btn-primary:hover { background: var(--lime-press); border-color: var(--lime-press); }
+    .btn[disabled] { opacity: .4; cursor: not-allowed; }
+    .btn-sm { padding: 6px 14px; font-size: 13px; }
+
+    .pill {
+      display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px;
+      font-size: 12.5px; font-weight: 600; background: var(--paper-2); color: var(--ink-2); white-space: nowrap;
+    }
+    .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+    .pill.ok { background: var(--ok-bg); color: #35600a; } .pill.ok .dot { background: var(--ok); }
+    .pill.bad { background: var(--bad-bg); color: #9c2412; } .pill.bad .dot { background: var(--bad); }
+    .pill.off { background: var(--off-bg); color: #5d6154; } .pill.off .dot { background: var(--off); }
+    .pill.warn { background: var(--warn-bg); color: var(--warn); } .pill.warn .dot { background: var(--volt); }
+    .pill.live .dot { background: var(--ok); animation: pulse 2s infinite; }
+    @keyframes pulse { 50% { opacity: .35; } }
+
+    /* ---------- Layout ---------- */
+    main { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 36px 28px 80px; }
+
+    .hero { margin-bottom: 26px; max-width: 760px; }
+    .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+    .hero h1 { font-size: clamp(34px, 5vw, 58px); line-height: 1.02; letter-spacing: -0.035em; font-weight: 700; margin: 10px 0 12px; }
+    .hero h1 mark { background: linear-gradient(transparent 60%, var(--lime) 60%); color: inherit; padding: 0 .08em; }
+    .hero p { font-size: 17px; color: var(--ink-2); max-width: 60ch; }
+
+    .stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 30px; }
+    .stat {
+      display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;
+      text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+      padding: 16px 18px; box-shadow: var(--shadow); transition: transform .15s, border-color .15s;
+    }
+    button.stat:hover { transform: translateY(-2px); border-color: var(--line-2); }
+    .stat .label { font-size: 13px; color: var(--muted); font-weight: 500; display: flex; align-items: center; gap: 7px; }
+    .stat .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .stat .num { font-size: 38px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.1; margin-top: 6px; font-variant-numeric: tabular-nums; }
+    .stat .note { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); }
+
+    /* ---------- Filters ---------- */
+    .toolbar { padding: 18px; margin-bottom: 16px; }
+    .search {
+      display: flex; align-items: center; gap: 10px; background: var(--paper); border: 1.5px solid var(--line-2);
+      border-radius: 999px; padding: 4px 6px 4px 18px; transition: border-color .15s, box-shadow .15s;
+    }
+    .search:focus-within { border-color: var(--ink); box-shadow: 0 0 0 4px rgba(210, 255, 0, 0.5); }
+    .search input { flex: 1; border: 0; background: transparent; padding: 11px 4px; font-size: 16px; outline: none; min-width: 0; }
+    .search input::placeholder { color: var(--faint); }
+    .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field > span { font-size: 12px; font-weight: 600; color: var(--muted); padding-left: 4px; }
+    select, .input {
+      appearance: none; background: var(--paper) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5l5 5 5-5' fill='none' stroke='%23282c20' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat right 14px center;
+      border: 1.5px solid var(--line-2); border-radius: 999px; padding: 9px 36px 9px 16px; min-width: 130px; font-weight: 500;
+    }
+    .input { background-image: none; padding-right: 16px; }
+    select:hover, .input:hover { border-color: var(--ink-2); }
+    .near { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line-2); display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+    .near .title { font-weight: 700; align-self: center; margin-right: 6px; }
+    .result-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 4px 4px 12px; color: var(--muted); font-size: 14px; }
+    .result-line strong { color: var(--ink); }
+    .result-line.error { color: var(--bad); font-weight: 600; }
+
+    /* ---------- Table ---------- */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 12.5px; font-weight: 600; color: var(--muted); padding: 13px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--card); position: sticky; top: 0; }
+    td { padding: 13px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+    td.wrap { white-space: normal; min-width: 220px; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tr[data-meter-id] { cursor: pointer; transition: background .12s; }
+    tr[data-meter-id]:hover { background: rgba(210, 255, 0, 0.22); }
+    .mono { font-family: var(--mono); font-size: 13.5px; }
+    .id { font-family: var(--mono); font-weight: 500; font-size: 14px; }
+    .sub { font-size: 12.5px; color: var(--muted); }
+    .muted { color: var(--muted); }
+    .empty { padding: 56px 20px; text-align: center; color: var(--muted); }
+    .empty strong { display: block; font-size: 18px; color: var(--ink); margin-bottom: 6px; }
+    .pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 4px 0; color: var(--muted); }
+
+    /* ---------- Map ---------- */
+    .split { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr); gap: 18px; }
+    .panel { padding: 22px; }
+    .panel h2 { font-size: 20px; letter-spacing: -0.02em; }
+    .panel .desc { color: var(--muted); font-size: 14px; margin: 2px 0 14px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--ink-2); margin-bottom: 10px; }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+    .map-box { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; }
+    #map-svg { width: 100%; height: auto; display: block; }
+    #map-svg circle[data-meter-id] { cursor: pointer; transition: transform .12s, opacity .15s; stroke: #fff; stroke-width: 1.8; vector-effect: non-scaling-stroke; transform-box: fill-box; transform-origin: center; filter: drop-shadow(0 1px 1.5px rgba(40,44,32,.35)); }
+    #map-svg circle[data-meter-id]:hover, #map-svg circle[data-meter-id]:focus-visible { transform: scale(1.5); stroke: var(--ink); outline: none; }
+    #map-svg .tiles { filter: grayscale(.9) contrast(.9) brightness(1.06) sepia(.12); opacity: .85; }
+    .map-credit { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+    .map-credit a { color: inherit; }
+    #map-svg circle.dim { opacity: .13; }
+    .dt-scroll { max-height: 520px; overflow-y: auto; margin: 0 -8px; padding: 0 8px; }
+    .dt-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 12px; border-radius: var(--r-sm); cursor: pointer; transition: background .12s; }
+    .dt-row:hover { background: rgba(210, 255, 0, 0.24); }
+    .dt-row + .dt-row { margin-top: 2px; }
+    .dt-name { font-weight: 600; }
+    .dt-right { text-align: right; min-width: 118px; }
+    .bar { display: flex; height: 7px; border-radius: 99px; overflow: hidden; background: var(--paper-2); margin-top: 6px; }
+    .bar i { display: block; height: 100%; }
+
+    /* ---------- Network tree ---------- */
+    .tree { padding: 10px 14px 16px; }
+    details.node { margin: 2px 0; }
+    details.node > summary {
+      list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--r-sm);
+    }
+    details.node > summary::-webkit-details-marker { display: none; }
+    details.node > summary::before { content: "▸"; color: var(--muted); font-size: 12px; width: 12px; transition: transform .15s; }
+    details.node[open] > summary::before { transform: rotate(90deg); }
+    details.node > summary:hover { background: var(--paper-2); }
+    .children { margin-left: 17px; padding-left: 14px; border-left: 1.5px solid var(--line-2); }
+    .lvl { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); min-width: 84px; }
+    .code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+    .count { margin-left: auto; font-size: 13px; color: var(--ink-2); font-weight: 500; white-space: nowrap; }
+    .leaf { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 0; background: transparent; padding: 8px 12px 8px 34px; border-radius: var(--r-sm); }
+    .leaf:hover { background: rgba(210, 255, 0, 0.26); }
+    .note-box { background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--lime); border-radius: var(--r-sm); padding: 14px 18px; margin-bottom: 16px; color: var(--ink-2); }
+    .note-box strong { color: var(--ink); }
+
+    /* ---------- Data quality ---------- */
+    .issue-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 16px; }
+    .issue { padding: 20px 22px; }
+    .issue .big { font-size: 44px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.05; }
+    .issue h3 { font-size: 16px; margin: 6px 0 4px; }
+    .issue p { color: var(--muted); font-size: 14px; }
+    .tag { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--warn-bg); color: var(--warn); white-space: nowrap; }
+    .before { color: var(--bad); font-family: var(--mono); font-size: 12.5px; }
+    .after { color: var(--ok); font-family: var(--mono); font-size: 12.5px; }
+    .before em, .after em { font-style: normal; font-weight: 700; text-decoration: underline wavy; text-underline-offset: 3px; }
+
+    /* ---------- Drawer ---------- */
+    .drawer { position: fixed; inset: 0; z-index: 60; background: rgba(40, 44, 32, 0.45); backdrop-filter: blur(3px); display: flex; justify-content: flex-end; animation: fade .2s; }
+    @keyframes fade { from { opacity: 0; } }
+    @keyframes slide { from { transform: translateX(40px); opacity: 0; } }
+    .sheet { width: min(780px, 100%); height: 100%; overflow-y: auto; background: var(--paper); padding: 26px 28px 40px; animation: slide .25s ease-out; box-shadow: -20px 0 60px -20px rgba(0,0,0,.3); }
+    .sheet-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+    .sheet h2 { font-size: 34px; letter-spacing: -0.03em; line-height: 1.1; font-family: var(--mono); font-weight: 500; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+    .path { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 12px; font-size: 13px; color: var(--ink-2); }
+    .path span.sep { color: var(--faint); }
+    .path b { font-weight: 600; }
+    .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }
+    .fact { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px 14px; }
+    .fact .k { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .fact .v { font-weight: 600; margin-top: 2px; }
+    .alert { background: var(--warn-bg); border-radius: var(--r-sm); padding: 14px 16px; color: #7a3a08; margin-bottom: 20px; font-size: 14px; }
+    .alert strong { display: block; margin-bottom: 4px; }
+    .alert li { margin-left: 18px; }
+
+    .seg { display: inline-flex; background: var(--paper-2); border-radius: 999px; padding: 4px; }
+    .seg button { border: 0; background: transparent; padding: 7px 16px; border-radius: 999px; font-weight: 600; font-size: 14px; color: var(--ink-2); }
+    .seg button[aria-pressed="true"] { background: var(--ink); color: var(--lime); }
+    .section-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .section-head h3 { font-size: 20px; letter-spacing: -0.02em; }
+    .summary-line { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 14px 16px; margin-bottom: 14px; font-size: 16px; }
+    .summary-line mark { background: var(--lime); border-radius: 6px; padding: 1px 6px; font-weight: 700; color: var(--ink); }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .kpi { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px 14px; }
+    .kpi .k { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .kpi .v { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+    .kpi .u { font-size: 13px; color: var(--muted); font-weight: 500; letter-spacing: 0; }
+    .chart { padding: 18px 18px 12px; margin-bottom: 14px; }
+    .chart h4 { font-size: 15px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .chart h4 small { font-weight: 500; color: var(--muted); font-size: 12.5px; }
+    .chart svg { width: 100%; height: auto; display: block; margin-top: 8px; }
+    .chart .legend { margin: 8px 0 0; font-size: 12.5px; }
+    .chart .legend i { border-radius: 3px; width: 11px; height: 11px; }
+    details.raw { margin-top: 6px; }
+    details.raw > summary { cursor: pointer; font-weight: 600; padding: 10px 2px; }
+    details.raw .table-wrap { max-height: 280px; overflow: auto; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--card); }
+
+    .tip { position: fixed; z-index: 90; pointer-events: none; background: var(--ink); color: #fff; font-size: 13px; padding: 6px 11px; border-radius: 10px; max-width: 260px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+    .toast { position: fixed; z-index: 95; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 999px; font-weight: 500; box-shadow: 0 12px 30px rgba(0,0,0,.3); max-width: 90vw; }
+    .toast b { color: var(--lime); }
+
+    @media (max-width: 960px) { nav { order: 3; flex-basis: 100%; } .topbar-inner { gap: 10px 14px; } .top-actions { margin-left: auto; } }
+    @media (max-width: 1100px) { .stats { grid-template-columns: repeat(3, 1fr); } .split { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) {
+      main { padding: 24px 16px 60px; } .topbar-inner { padding: 10px 16px; gap: 12px; }
+      .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; } .stat .num { font-size: 30px; }
+      .sheet { padding: 20px 16px 40px; } .sheet h2 { font-size: 26px; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#meters" aria-label="Urja home">
+        <span class="brand-mark" aria-hidden="true">U</span> Urja
+      </a>
+      <nav aria-label="Sections">
+        <button class="nav-btn" data-action="tab" data-tab="meters" aria-current="page">Meters</button>
+        <button class="nav-btn" data-action="tab" data-tab="map">Map</button>
+        <button class="nav-btn" data-action="tab" data-tab="network">Network</button>
+        <button class="nav-btn" data-action="tab" data-tab="quality">Data quality</button>
+      </nav>
+      <div class="top-actions">
+        <span id="sync-pill" class="pill" role="status"><span class="dot"></span><span id="sync-text">Loading…</span></span>
+        <button class="btn btn-sm" data-action="sync" title="Fetch the latest data from the portal">Refresh</button>
+        <a class="btn btn-primary btn-sm" href="/docs" target="_blank" rel="noopener">API docs ↗</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="eyebrow"><span class="pill live"><span class="dot"></span>Live from the portal</span><span id="eyebrow-extra"></span></div>
+      <h1 id="view-title">Find any meter</h1>
+      <p id="view-desc"></p>
+    </section>
+
+    <section class="stats" aria-label="Network summary">
+      <button class="stat" data-action="clear-filters" title="Show all meters">
+        <div class="label">All meters</div><div class="num" id="kpi-total">—</div><div class="note">across the network</div>
+      </button>
+      <button class="stat" data-action="filter-status" data-status="Installed">
+        <div class="label"><span class="dot" style="background:var(--ok)"></span>Working</div><div class="num" id="kpi-installed">—</div><div class="note" id="kpi-installed-note">installed</div>
+      </button>
+      <button class="stat" data-action="filter-status" data-status="Faulty">
+        <div class="label"><span class="dot" style="background:var(--bad)"></span>Faulty</div><div class="num" id="kpi-faulty">—</div><div class="note" id="kpi-faulty-note">need attention</div>
+      </button>
+      <button class="stat" data-action="filter-status" data-status="Decommissioned">
+        <div class="label"><span class="dot" style="background:var(--off)"></span>Retired</div><div class="num" id="kpi-decomm">—</div><div class="note" id="kpi-decomm-note">decommissioned</div>
+      </button>
+      <button class="stat" data-action="tab" data-tab="map">
+        <div class="label">Transformers</div><div class="num" id="kpi-dts">—</div><div class="note">see them on the map →</div>
+      </button>
+      <button class="stat" data-action="tab" data-tab="quality">
+        <div class="label">Issues auto-fixed</div><div class="num" id="kpi-fixed">—</div><div class="note">view the report →</div>
+      </button>
+    </section>
+
+    <!-- ============ Meters ============ -->
+    <section id="view-meters">
+      <div class="card toolbar">
+        <label class="search">
+          <span aria-hidden="true">🔍</span>
+          <span class="sr-only">Search meters</span>
+          <input id="f-q" type="search" placeholder="Search by meter ID, serial number, transformer or maker…" autocomplete="off" />
+        </label>
+        <div class="filters">
+          <label class="field"><span>Status</span>
+            <select id="f-status">
+              <option value="">Any status</option>
+              <option value="Installed">Working</option>
+              <option value="Faulty">Faulty</option>
+              <option value="Decommissioned">Retired</option>
+            </select>
+          </label>
+          <label class="field"><span>Maker</span>
+            <select id="f-make">
+              <option value="">Any maker</option>
+              <option>HPL</option><option>Genus</option><option>Secure</option><option>Allied</option><option value="L&T">L&amp;T</option>
+            </select>
+          </label>
+          <label class="field"><span>Phase</span>
+            <select id="f-phase">
+              <option value="">Any phase</option>
+              <option value="single">Single phase</option>
+              <option value="three">Three phase</option>
+            </select>
+          </label>
+          <label class="field"><span>Zone</span>
+            <select id="f-zone">
+              <option value="">All zones</option>
+              <option value="Z-01">Jaipur Zone 1</option><option value="Z-02">Jaipur Zone 2</option><option value="Z-03">Jaipur Zone 3</option>
+            </select>
+          </label>
+          <label class="field"><span>Data check</span>
+            <select id="f-anomaly">
+              <option value="">All records</option>
+              <option value="true">Auto-fixed only</option>
+              <option value="false">Clean only</option>
+            </select>
+          </label>
+          <button class="btn btn-sm" data-action="clear-filters" style="align-self:flex-end">Clear all</button>
+        </div>
+        <div class="near">
+          <span class="title">📍 Near a place</span>
+          <label class="field"><span>Landmark</span>
+            <select id="f-place">
+              <option value="">Anywhere</option>
+              <option value="26.8549,75.8243">Malviya Nagar</option>
+              <option value="26.8505,75.7628">Mansarovar</option>
+              <option value="26.9260,75.7885">Bani Park</option>
+              <option value="26.9124,75.7873">Jaipur centre</option>
+              <option value="custom">Custom point…</option>
+            </select>
+          </label>
+          <label class="field"><span>Within</span>
+            <select id="f-radius">
+              <option value="1">1 km</option><option value="2">2 km</option><option value="3">3 km</option><option value="5" selected>5 km</option><option value="10">10 km</option>
+            </select>
+          </label>
+          <label class="field custom-pt hidden"><span>Latitude</span><input id="f-lat" class="input" type="number" step="0.0001" placeholder="26.9124" style="width:120px" /></label>
+          <label class="field custom-pt hidden"><span>Longitude</span><input id="f-lng" class="input" type="number" step="0.0001" placeholder="75.7873" style="width:120px" /></label>
+        </div>
+      </div>
+
+      <div id="results-line" class="result-line" role="status"><span>Loading meters…</span></div>
+
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr><th>Meter</th><th>Maker</th><th>Type</th><th>Status</th><th>Transformer</th><th>Where in the network</th><th>Readings</th><th>Data check</th></tr>
+          </thead>
+          <tbody id="meters-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="pager">
+        <button id="btn-prev" class="btn btn-sm" data-action="page" data-delta="-1">← Previous</button>
+        <span id="page-indicator"></span>
+        <button id="btn-next" class="btn btn-sm" data-action="page" data-delta="1">Next →</button>
+      </div>
+    </section>
+
+    <!-- ============ Map ============ -->
+    <section id="view-map" class="hidden">
+      <div class="split">
+        <div class="card panel">
+          <h2>All meters, plotted by location</h2>
+          <p class="desc">Every meter at its real location in Jaipur. Hover a dot for details, click it to open the meter.</p>
+          <div class="legend" id="map-legend"></div>
+          <div class="map-box"><svg id="map-svg" viewBox="0 0 720 500" role="img" aria-label="Street map of Jaipur with every meter coloured by status"></svg></div>
+          <p class="map-credit">Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors. Map tiles load from openstreetmap.org; without internet only the dots appear.</p>
+        </div>
+        <div class="card panel">
+          <h2>Transformers</h2>
+          <p class="desc">Hover a transformer to light up its meters. Click it to list them.</p>
+          <div id="dts-list" class="dt-scroll"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Network ============ -->
+    <section id="view-network" class="hidden">
+      <div class="note-box">
+        <strong>Heads-up:</strong> the old portal reuses some codes under different parents (for example the same Division code appears in several Circles), so a code alone doesn't identify a place. This tree follows each transformer's actual path. Healed gaps are listed in <a href="#quality" style="font-weight:600">Data quality</a>.
+      </div>
+      <div id="tree" class="card tree"></div>
+    </section>
+
+    <!-- ============ Data quality ============ -->
+    <section id="view-quality" class="hidden">
+      <div id="issue-cards" class="issue-cards"></div>
+      <div class="card table-wrap">
+        <table>
+          <thead><tr><th>Meter</th><th>What was wrong</th><th>The portal said</th><th>We used</th><th>Explanation</th></tr></thead>
+          <tbody id="issues-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ Meter drawer ============ -->
+  <div id="drawer" class="drawer hidden" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+    <div class="sheet" id="sheet">
+      <div class="sheet-head">
+        <div>
+          <div class="eyebrow">Meter</div>
+          <h2 id="drawer-title"></h2>
+          <div class="chips" id="drawer-chips"></div>
+        </div>
+        <button class="btn btn-sm" data-action="close" aria-label="Close">Close ✕</button>
+      </div>
+      <div class="path" id="drawer-path"></div>
+      <div class="facts" id="drawer-facts"></div>
+      <div id="drawer-alert"></div>
+
+      <div class="section-head">
+        <h3>Energy &amp; voltage</h3>
+        <div class="seg" role="group" aria-label="Time window">
+          <button id="win-7d" data-action="window" data-win="7d" aria-pressed="true">Last 7 days</button>
+          <button id="win-30d" data-action="window" data-win="30d" aria-pressed="false">Full June</button>
+        </div>
+      </div>
+      <div id="drawer-summary" class="summary-line">Loading…</div>
+      <div id="drawer-kpis" class="kpis"></div>
+      <div class="card chart"><h4 id="energy-title">Energy used each day <small>kWh</small></h4><svg id="energy-svg" viewBox="0 0 720 250"></svg><div class="legend" id="energy-legend"></div></div>
+      <div class="card chart"><h4>Voltage each day <small>lowest to highest reading, dot = average</small></h4><svg id="volt-svg" viewBox="0 0 720 200"></svg><div class="legend" id="volt-legend"></div></div>
+      <details class="raw"><summary>Show individual readings</summary>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Time (IST)</th><th>Meter reading (kWh)</th><th>Used since last (kWh)</th><th>Voltage</th></tr></thead>
+          <tbody id="readings-tbody"></tbody>
+        </table></div>
+      </details>
+    </div>
+  </div>
+
+  <div id="tip" class="tip hidden" role="tooltip"></div>
+  <div id="toast" class="toast hidden" role="alert"></div>
+
+  <script>
+    'use strict';
+
+    /* ================================================================
+       Safe templating: every interpolated value is HTML-escaped unless
+       it was produced by html`` itself or wrapped in raw().
+       ================================================================ */
+    class Safe { constructor(s) { this.s = s; } toString() { return this.s; } }
+    const raw = (s) => new Safe(String(s));
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const part = (v) => (v instanceof Safe ? v.s : Array.isArray(v) ? v.map(part).join('') : esc(v));
+    const html = (strings, ...vals) => raw(strings.reduce((out, s, i) => out + s + (i < vals.length ? part(vals[i]) : ''), ''));
+    const $ = (id) => document.getElementById(id);
+    const setHtml = (id, tpl) => { $(id).innerHTML = part(tpl); };
+
+    /* ---------------- helpers ---------------- */
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const fmt = (n, d = 0) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d });
+    const dayLabel = (iso) => `${Number(iso.slice(8, 10))} ${MONTHS[Number(iso.slice(5, 7)) - 1]}`;
+    const STATUS = {
+      Installed: { label: 'Working', cls: 'ok', color: '#5f9e0a' },
+      Faulty: { label: 'Faulty', cls: 'bad', color: '#e5472b' },
+      Decommissioned: { label: 'Retired', cls: 'off', color: '#a9ad9d' },
+    };
+    const statusPill = (s) => { const x = STATUS[s] || { label: s, cls: '' }; return html`<span class="pill ${x.cls}"><span class="dot"></span>${x.label}</span>`; };
+    const LEVELS = { zone: 'Zone', circle: 'Circle', division: 'Division', subdivision: 'Subdivision', substation: 'Substation', feeder: 'Feeder', dt: 'Transformer' };
+    const issueLabel = (r) => {
+      const level = (LEVELS[r.level] || '').toLowerCase();
+      switch (r.category) {
+        case 'missing_hierarchy_code': return `${LEVELS[r.level]} code was blank`;
+        case 'missing_hierarchy_name': return `${LEVELS[r.level]} name was blank`;
+        case 'dt_name_conflict': return `Transformer had a different name (${level})`.replace(' (transformer)', '');
+        case 'non_standard_serial_prefix': return 'Unusual serial prefix';
+        default: return r.category;
+      }
+    };
+
+    async function api(path, init) {
+      const res = await fetch(path, init);
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(body?.error?.message || `Request failed (HTTP ${res.status})`);
+      return body;
+    }
+
+    let toastTimer;
+    function toast(message) {
+      const el = $('toast');
+      el.innerHTML = `<b>Heads up:</b> ${esc(message)}`;
+      el.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.add('hidden'), 6000);
+    }
+
+    function relativeTime(iso) {
+      const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+      if (s < 10) return 'just now';
+      if (s < 60) return `${s}s ago`;
+      if (s < 3600) return `${Math.round(s / 60)} min ago`;
+      return `${Math.round(s / 3600)} h ago`;
+    }
+
+    function renderSync(meta) {
+      if (!meta) return;
+      const pill = $('sync-pill');
+      pill.className = 'pill ' + (meta.staleFallback ? 'warn' : 'ok');
+      $('sync-text').textContent = meta.staleFallback
+        ? 'Portal unreachable — showing saved data'
+        : `Updated ${relativeTime(meta.lastSyncedAt)}`;
+    }
+
+    /* ---------------- state ---------------- */
+    const state = { page: 1, allMeters: [], currentMeter: null, win: '7d', tab: 'meters' };
+    const VIEWS = {
+      meters: ['Find any <mark>meter</mark>', 'Search the whole network by ID, serial number or transformer — or pick a place and see what is nearby. Click any row to see its energy use.'],
+      map: ['See the <mark>network</mark> on a map', 'Every dot is a meter, coloured by whether it is working. Pick a transformer to see which meters hang off it.'],
+      network: ['How the grid is <mark>organised</mark>', 'Zone → Circle → Division → Subdivision → Substation → Feeder → Transformer. Open a branch to drill down.'],
+      quality: ['Data <mark>quality</mark> report', 'The legacy portal’s data had gaps and inconsistencies. This is every problem we found, and how each one was handled.'],
+    };
+
+    /* ---------------- navigation ---------------- */
+    function switchTab(tab, { updateHash = true } = {}) {
+      if (!VIEWS[tab]) tab = 'meters';
+      state.tab = tab;
+      for (const t of Object.keys(VIEWS)) $('view-' + t).classList.toggle('hidden', t !== tab);
+      document.querySelectorAll('.nav-btn[data-tab]').forEach((b) => {
+        if (b.dataset.tab === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+      });
+      setHtml('view-title', raw(VIEWS[tab][0]));
+      $('view-desc').textContent = VIEWS[tab][1];
+      if (updateHash && location.hash !== '#' + tab) history.replaceState(null, '', '#' + tab);
+      if (tab === 'map') loadMap();
+      if (tab === 'network') loadNetwork();
+      if (tab === 'quality') loadQuality();
+    }
+
+    /* ---------------- summary & stats ---------------- */
+    async function loadSummary() {
+      const [m, a, d] = await Promise.all([
+        api('/api/v1/meters?limit=500'),
+        api('/api/v1/anomalies'),
+        api('/api/v1/transformers?limit=100'),
+      ]);
+      state.allMeters = m.data;
+      state.transformers = d.data;
+      const total = m.pagination.total;
+      const by = m.facets.byStatus;
+      const pct = (n) => `${Math.round((n / total) * 100)}% of the fleet`;
+      $('kpi-total').textContent = fmt(total);
+      $('kpi-installed').textContent = fmt(by.Installed || 0);
+      $('kpi-installed-note').textContent = pct(by.Installed || 0);
+      $('kpi-faulty').textContent = fmt(by.Faulty || 0);
+      $('kpi-faulty-note').textContent = `${pct(by.Faulty || 0)} · need attention`;
+      $('kpi-decomm').textContent = fmt(by.Decommissioned || 0);
+      $('kpi-decomm-note').textContent = pct(by.Decommissioned || 0);
+      $('kpi-dts').textContent = fmt(d.pagination.total);
+      $('kpi-fixed').textContent = fmt(a.data.totalStructuralAnomalies + a.data.knownCorruptedTelemetryMeters.length);
+      renderSync(m.meta);
+    }
+
+    /* ---------------- meters table ---------------- */
+    let debounce;
+    function readFilters() {
+      const params = new URLSearchParams({ page: String(state.page), limit: '20' });
+      const set = (key, id) => { const v = $(id).value.trim(); if (v) params.set(key, v); };
+      set('q', 'f-q'); set('status', 'f-status'); set('make', 'f-make'); set('phase', 'f-phase'); set('zone', 'f-zone'); set('hasAnomaly', 'f-anomaly');
+      const place = $('f-place').value;
+      let lat = '', lng = '';
+      if (place === 'custom') { lat = $('f-lat').value; lng = $('f-lng').value; }
+      else if (place) [lat, lng] = place.split(',');
+      if (lat && lng) { params.set('nearLat', lat); params.set('nearLng', lng); params.set('radiusKm', $('f-radius').value); }
+      return params;
+    }
+
+    async function queryMeters(page = 1) {
+      state.page = page;
+      const line = $('results-line');
+      let json;
+      try {
+        json = await api('/api/v1/meters?' + readFilters());
+      } catch (err) {
+        line.className = 'result-line error';
+        line.textContent = err.message;
+        return;
+      }
+      line.className = 'result-line';
+      const p = json.pagination;
+      const first = p.total === 0 ? 0 : (p.page - 1) * p.limit + 1;
+      const last = Math.min(p.total, p.page * p.limit);
+      setHtml('results-line', html`<span>Showing <strong>${fmt(first)}–${fmt(last)}</strong> of <strong>${fmt(p.total)}</strong> meters</span>`);
+      $('page-indicator').textContent = `Page ${p.page} of ${p.totalPages}`;
+      $('btn-prev').disabled = !p.hasPrevPage;
+      $('btn-next').disabled = !p.hasNextPage;
+      renderSync(json.meta);
+
+      if (json.data.length === 0) {
+        setHtml('meters-tbody', html`<tr><td colspan="8"><div class="empty"><strong>No meters match</strong>Try removing a filter or searching for something broader.<br><br><button class="btn btn-sm" data-action="clear-filters">Clear all filters</button></div></td></tr>`);
+        return;
+      }
+      setHtml('meters-tbody', json.data.map(meterRow));
+    }
+
+    function meterRow(m) {
+      const checks = [];
+      if (m.dataQuality?.hasStructuralAnomaly) checks.push(html`<span class="tag">Auto-fixed</span>`);
+      if (!m.dataQuality?.serialPrefixMatchesMake) checks.push(html`<span class="sub" title="The serial number prefix suggests a different maker">Serial ≠ maker</span>`);
+      return html`<tr data-meter-id="${m.meterId}" tabindex="0" role="button" aria-label="Open meter ${m.meterId}">
+        <td><div class="id">${m.meterId}</div><div class="sub mono">${m.serialNo}</div></td>
+        <td>${m.make}</td>
+        <td>${m.phaseType === 'three' ? 'Three phase' : 'Single phase'}<div class="sub">${m.installType || ''}</div></td>
+        <td>${statusPill(m.installStatus)}</td>
+        <td><strong>${m.dtCode}</strong><div class="sub">${m.dtName || ''}</div></td>
+        <td>${m.hierarchy?.zone?.name || ''}<div class="sub">${m.hierarchy?.substation?.name || ''} › ${m.hierarchy?.feeder?.name || ''}</div></td>
+        <td>${m.telemetryGranularity === '30m' ? 'Every 30 min' : 'Daily'}</td>
+        <td>${checks.length ? checks.map((c) => html`${c} `) : html`<span class="muted">✓ Clean</span>`}${typeof m.distanceKm === 'number' ? html` <span class="pill" style="margin-left:4px">${fmt(m.distanceKm, 1)} km away</span>` : ''}</td>
+      </tr>`;
+    }
+
+    function clearFilters() {
+      for (const id of ['f-q', 'f-status', 'f-make', 'f-phase', 'f-zone', 'f-anomaly', 'f-place', 'f-lat', 'f-lng']) $(id).value = '';
+      $('f-radius').value = '5';
+      syncCustomPoint();
+      switchTab('meters');
+      queryMeters(1);
+    }
+    function syncCustomPoint() {
+      document.querySelectorAll('.custom-pt').forEach((el) => el.classList.toggle('hidden', $('f-place').value !== 'custom'));
+    }
+
+    /* ---------------- map ---------------- */
+    async function loadMap() {
+      if (!state.allMeters.length) await loadSummary();
+      const located = state.allMeters.filter((m) => m.location);
+      if (!located.length) return;
+
+      // Web Mercator: the same projection the street-map tiles use, so dots land on the right streets.
+      const worldPx = (lat, lng, z) => {
+        const scale = 256 * 2 ** z;
+        const sin = Math.sin((lat * Math.PI) / 180);
+        return [((lng + 180) / 360) * scale, (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale];
+      };
+      const lats = located.map((m) => m.location.latitude), lngs = located.map((m) => m.location.longitude);
+      const bounds = (z) => {
+        const [x0, y1] = worldPx(Math.min(...lats), Math.min(...lngs), z); // south-west corner
+        const [x1, y0] = worldPx(Math.max(...lats), Math.max(...lngs), z); // north-east corner
+        const padX = (x1 - x0) * 0.07, padY = (y1 - y0) * 0.07;
+        return { x0: x0 - padX, y0: y0 - padY, x1: x1 + padX, y1: y1 + padY };
+      };
+      const tileCount = (b) => (Math.floor(b.x1 / 256) - Math.floor(b.x0 / 256) + 1) * (Math.floor(b.y1 / 256) - Math.floor(b.y0 / 256) + 1);
+      let zoom = 14;
+      while (zoom > 9 && tileCount(bounds(zoom)) > 30) zoom -= 1; // most detail that still needs a modest number of tiles
+      const b = bounds(zoom);
+      const vw = b.x1 - b.x0, vh = b.y1 - b.y0;
+      $('map-svg').setAttribute('viewBox', `${b.x0.toFixed(1)} ${b.y0.toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`);
+
+      const tiles = [];
+      for (let ty = Math.floor(b.y0 / 256); ty <= Math.floor(b.y1 / 256); ty++) {
+        for (let tx = Math.floor(b.x0 / 256); tx <= Math.floor(b.x1 / 256); tx++) {
+          tiles.push(html`<image href="https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png" x="${tx * 256}" y="${ty * 256}" width="256" height="256" preserveAspectRatio="none"/>`);
+        }
+      }
+
+      const radius = (vw / 720) * 5.6; // keep dots ~5.6px on screen whatever the zoom
+      const dots = located.map((m) => {
+        const [px, py] = worldPx(m.location.latitude, m.location.longitude, zoom);
+        return html`<circle data-meter-id="${m.meterId}" data-dt="${m.dtCode}" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${radius.toFixed(2)}" fill="${STATUS[m.installStatus]?.color || '#999'}" tabindex="0" role="button" aria-label="${m.meterId}, ${STATUS[m.installStatus]?.label}" data-tip="${m.meterId} · ${STATUS[m.installStatus]?.label || m.installStatus} · ${m.dtName}"/>`;
+      });
+      setHtml('map-svg', html`<g class="tiles">${tiles}</g>${dots}`);
+
+      const counts = state.allMeters.reduce((c, m) => ({ ...c, [m.installStatus]: (c[m.installStatus] || 0) + 1 }), {});
+      setHtml('map-legend', Object.entries(STATUS).map(([k, s]) => html`<span><i style="background:${s.color}"></i>${s.label} <strong>${fmt(counts[k] || 0)}</strong></span>`));
+
+      setHtml('dts-list', (state.transformers || []).map((dt) => {
+        const b = dt.statusBreakdown || {}, total = dt.meterCount || 1;
+        const seg = (k) => html`<i style="width:${((b[k] || 0) / total) * 100}%;background:${STATUS[k].color}"></i>`;
+        return html`<div class="dt-row" data-dt-code="${dt.code}" tabindex="0" role="button">
+          <div><div class="dt-name">${dt.name}</div>
+            <div class="sub">${dt.code} · Feeder ${dt.feederCode} · ${fmt(dt.capacityKva)} kVA${dt.aliases?.length ? ' · also called “' + dt.aliases.join(', ') + '”' : ''}</div></div>
+          <div class="dt-right"><div class="sub"><strong style="color:var(--ink)">${dt.meterCount}</strong> meters${b.Faulty ? html` · <span style="color:var(--bad)">${b.Faulty} faulty</span>` : ''}</div>
+            <div class="bar">${seg('Installed')}${seg('Faulty')}${seg('Decommissioned')}</div></div>
+        </div>`;
+      }));
+    }
+
+    function focusTransformer(code) {
+      document.querySelectorAll('#map-svg circle[data-meter-id]').forEach((c) => c.classList.toggle('dim', Boolean(code) && c.dataset.dt !== code));
+    }
+
+    /* ---------------- network tree ---------------- */
+    async function loadNetwork() {
+      const { data } = await api('/api/v1/hierarchy');
+      const node = (n, depth) => {
+        if (n.children) {
+          return html`<details class="node" ${depth < 1 ? raw('open') : ''}>
+            <summary><span class="lvl">${LEVELS[n.level]}</span><strong>${n.name}</strong><span class="code">${n.code}</span><span class="count">${fmt(n.meterCount)} meters</span></summary>
+            <div class="children">${n.children.map((c) => node(c, depth + 1))}</div></details>`;
+        }
+        return html`<button class="leaf" data-dt-code="${n.code}"><span class="lvl">${LEVELS[n.level]}</span><strong>${n.name}</strong><span class="code">${n.code}</span><span class="count">${fmt(n.meterCount)} meters${n.capacityKva ? ' · ' + fmt(n.capacityKva) + ' kVA' : ''}</span></button>`;
+      };
+      setHtml('tree', data.zones.map((z) => node(z, 0)));
+    }
+
+    /* ---------------- data quality ---------------- */
+    async function loadQuality() {
+      const { data: d } = await api('/api/v1/anomalies');
+      const gaps = d.missingHierarchyCodes + d.missingHierarchyNames;
+      setHtml('issue-cards', html`
+        <div class="card issue"><div class="big">${gaps}</div><h3>Records with blank names or codes</h3><p>${d.missingHierarchyCodes} blank codes and ${d.missingHierarchyNames} blank names. Each was filled in from other meters that share the same code or name.</p></div>
+        <div class="card issue"><div class="big">${d.dtNameConflicts}</div><h3>Meters using an old transformer name</h3><p>Three meters call DT-007 “Old Malviya Nagar Xfmr”. The transformer registry says “Sanganer DT 7”, so we use that and keep the old name as an alias.</p></div>
+        <div class="card issue"><div class="big">${d.knownCorruptedTelemetryMeters.length}</div><h3>Meters with a corrupted last reading</h3><p>${d.knownCorruptedTelemetryMeters.join(', ')} end with a duplicate row that has blank values. We drop it and report it.</p></div>
+        <div class="card issue"><div class="big">${fmt(d.serialMakeMismatches)}</div><h3>Serial prefix doesn’t match the maker</h3><p>Flagged but not changed — we can’t tell whether the serial or the maker is the one that’s wrong.</p></div>`);
+      setHtml('issues-tbody', d.records.map((r) => {
+        // Show each field explicitly so a blank one is obvious, e.g. "code: (blank) · name: Circle 6".
+        const show = (v) => (v ? html`code: ${v.code || html`<em>(blank)</em>`} · name: ${v.name || html`<em>(blank)</em>`}` : '');
+        return html`<tr data-meter-id="${r.meterId}" tabindex="0" role="button">
+          <td class="id">${r.meterId}</td><td><span class="tag">${issueLabel(r)}</span></td>
+          <td><span class="before">${r.raw ? show(r.raw) : r.serialNo || ''}</span></td>
+          <td><span class="after">${r.healed ? show(r.healed) : 'Kept as is, flagged'}</span></td>
+          <td class="sub wrap">${r.description}</td></tr>`;
+      }));
+    }
+
+    /* ---------------- meter drawer ---------------- */
+    async function openMeter(meterId) {
+      state.currentMeter = meterId;
+      state.win = '7d';
+      $('drawer').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      $('drawer-title').textContent = meterId;
+      $('sheet').scrollTop = 0;
+      setHtml('drawer-chips', html`<span class="pill">Loading…</span>`);
+      const { data: m } = await api('/api/v1/meters/' + encodeURIComponent(meterId));
+
+      setHtml('drawer-chips', html`${statusPill(m.installStatus)}<span class="pill">${m.telemetryGranularity === '30m' ? 'Reads every 30 min' : 'Reads daily'}</span>`);
+      const levels = ['zone', 'circle', 'division', 'subdivision', 'substation', 'feeder', 'dt'];
+      setHtml('drawer-path', levels.map((l, i) => html`${i ? html`<span class="sep">›</span>` : ''}<span><b>${m.hierarchy?.[l]?.name || '—'}</b></span>`));
+      const fact = (k, v) => html`<div class="fact"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+      setHtml('drawer-facts', html`
+        ${fact('Serial number', m.serialNo)}${fact('Maker', m.make)}
+        ${fact('Type', (m.phaseType === 'three' ? 'Three phase' : 'Single phase') + (m.installType ? ' · ' + m.installType : ''))}
+        ${fact('Transformer', m.transformer ? `${m.transformer.name} (${fmt(m.transformer.capacityKva)} kVA)` : '—')}
+        ${fact('Location', m.location ? `${m.location.latitude.toFixed(4)}°N, ${m.location.longitude.toFixed(4)}°E` : '—')}`);
+
+      const notes = m.dataQuality?.anomalies || [];
+      setHtml('drawer-alert', notes.length
+        ? html`<div class="alert"><strong>Data notes (${notes.length})</strong><ul>${notes.map((a) => html`<li>${a.description}</li>`)}</ul></div>` : html``);
+
+      await loadWindow(state.win);
+    }
+
+    async function loadWindow(win) {
+      if (!state.currentMeter) return;
+      state.win = win;
+      $('win-7d').setAttribute('aria-pressed', String(win === '7d'));
+      $('win-30d').setAttribute('aria-pressed', String(win === '30d'));
+      $('drawer-summary').textContent = 'Loading readings…';
+      const qs = win === '30d' ? '?from=2026-06-01&to=2026-06-30' : '';
+      const { data } = await api(`/api/v1/meters/${encodeURIComponent(state.currentMeter)}/consumption${qs}`);
+      renderConsumption(data);
+    }
+
+    /** Buckets readings by IST calendar day: energy used (sum of deltas) and the voltage range. */
+    function groupByDay(readings, granularity) {
+      const days = new Map();
+      const expected = granularity === '30m' ? 48 : 1;
+      for (const r of readings) {
+        const iso = String(r.timestamp).slice(0, 10);
+        const d = days.get(iso) || { iso, kwh: 0, intervals: 0, vMin: Infinity, vMax: -Infinity, vSum: 0, vN: 0 };
+        if (r.deltaKwh != null) { d.kwh += r.deltaKwh; d.intervals += 1; }
+        d.vMin = Math.min(d.vMin, r.voltR); d.vMax = Math.max(d.vMax, r.voltR); d.vSum += r.voltR; d.vN += 1;
+        days.set(iso, d);
+      }
+      return [...days.values()].map((d) => ({ ...d, vAvg: d.vSum / d.vN, partial: d.intervals < expected }));
+    }
+
+    const VOLT_LOW = 216, VOLT_HIGH = 244; // 230 V ± 6 %
+    function niceCeil(v) {
+      const mag = 10 ** Math.floor(Math.log10(v || 1));
+      return ([1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find((s) => s * mag >= v) || 10) * mag;
+    }
+
+    function renderConsumption(data) {
+      const s = data.summary;
+      const allDays = groupByDay(data.readings, data.granularity);
+      const days = allDays.filter((d) => d.intervals > 0);
+      const full = days.filter((d) => !d.partial);
+      const avgPerDay = full.length ? full.reduce((t, d) => t + d.kwh, 0) / full.length : (days.length ? s.totalConsumptionKwh / days.length : 0);
+      const outside = data.readings.filter((r) => r.voltR < VOLT_LOW || r.voltR > VOLT_HIGH).length;
+
+      setHtml('drawer-summary', days.length ? html`Used <mark>${fmt(s.totalConsumptionKwh, 1)} kWh</mark> over ${days.length} day${days.length === 1 ? '' : 's'} — about <strong>${fmt(avgPerDay, 1)} kWh a day</strong>. ${outside === 0 ? 'Voltage stayed in the normal range.' : html`Voltage left the normal range on <strong>${outside}</strong> of ${data.readings.length} readings.`}${data.anomalies.length ? ` We removed ${data.anomalies.length} corrupted reading${data.anomalies.length > 1 ? 's' : ''}.` : ''}` : html`No readings in this window.`);
+      const kpi = (k, v, u) => html`<div class="kpi"><div class="k">${k}</div><div class="v">${v}<span class="u"> ${u}</span></div></div>`;
+      setHtml('drawer-kpis', html`
+        ${kpi('Energy used', fmt(s.totalConsumptionKwh, 1), 'kWh')}${kpi('Average per day', fmt(avgPerDay, 1), 'kWh')}
+        ${kpi('Average voltage', s.avgVoltageR == null ? '—' : fmt(s.avgVoltageR, 1), 'V')}${kpi('Voltage range', s.minVoltageR == null ? '—' : `${s.minVoltageR}–${s.maxVoltageR}`, 'V')}`);
+
+      renderEnergyChart(days);
+      renderVoltageChart(allDays);
+
+      setHtml('readings-tbody', data.readings.slice().reverse().slice(0, 150).map((r) => html`<tr>
+        <td class="mono">${r.rawTimestamp}</td><td class="mono">${fmt(r.kwh, 2)}</td>
+        <td class="mono">${r.deltaKwh == null ? '—' : '+' + fmt(r.deltaKwh, 2)}</td>
+        <td class="mono" style="color:${r.voltR < VOLT_LOW || r.voltR > VOLT_HIGH ? 'var(--bad)' : 'inherit'}">${r.voltR} V</td></tr>`));
+    }
+
+    function xLabels(days, slotX, y, every) {
+      return days.map((d, i) => (i % every === 0 ? html`<text x="${slotX(i)}" y="${y}" text-anchor="middle" font-size="11" fill="#7b806f">${dayLabel(d.iso)}</text>` : ''));
+    }
+
+    function renderEnergyChart(days) {
+      if (!days.length) { setHtml('energy-svg', html`<text x="360" y="125" text-anchor="middle" fill="#8a8f7e">No data</text>`); setHtml('energy-legend', html``); return; }
+      const W = 720, H = 250, L = 46, R = 12, T = 22, B = 30;
+      const max = niceCeil(Math.max(...days.map((d) => d.kwh)) * 1.08);
+      const plotW = W - L - R, plotH = H - T - B;
+      const slot = plotW / days.length, bw = Math.min(54, slot * 0.64);
+      const cx = (i) => L + slot * i + slot / 2;
+      const yv = (v) => T + plotH - (v / max) * plotH;
+      const fullDays = days.filter((d) => !d.partial);
+      const topDay = fullDays.length >= 3 ? fullDays.reduce((a, b) => (b.kwh > a.kwh ? b : a)) : null;
+      const typical = fullDays.length ? fullDays.reduce((t, d) => t + d.kwh, 0) / fullDays.length : 0;
+      const peak = topDay && topDay.kwh >= typical * 1.08 ? topDay : null; // ignore rounding-level differences
+      const every = days.length > 16 ? Math.ceil(days.length / 8) : 1;
+      const ticks = [0, 1, 2, 3, 4].map((i) => (max * i) / 4);
+
+      setHtml('energy-svg', html`
+        <defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#e3e4d8"/><line x1="0" y1="0" x2="0" y2="6" stroke="#b7baa9" stroke-width="2"/></pattern></defs>
+        ${ticks.map((t) => html`<line x1="${L}" x2="${W - R}" y1="${yv(t)}" y2="${yv(t)}" stroke="rgba(40,44,32,${t === 0 ? .35 : .09})"/><text x="${L - 8}" y="${yv(t) + 4}" text-anchor="end" font-size="11" fill="#7b806f">${t.toFixed(max < 10 ? 1 : 0)}</text>`)}
+        ${days.map((d, i) => {
+          const isPeak = peak && d.iso === peak.iso;
+          const fill = d.partial ? 'url(#hatch)' : isPeak ? '#d2ff00' : '#282c20';
+          const tip = `${dayLabel(d.iso)} · ${fmt(d.kwh, 1)} kWh${d.partial ? ' (partial day)' : ''}${isPeak ? ' · peak' : ''}`;
+          return html`<g data-tip="${tip}">
+            <rect x="${cx(i) - slot / 2}" y="${T}" width="${slot}" height="${plotH}" fill="transparent"/>
+            <rect x="${cx(i) - bw / 2}" y="${yv(d.kwh)}" width="${bw}" height="${Math.max(0, plotH - (yv(d.kwh) - T))}" rx="${Math.min(7, bw / 3)}" fill="${fill}" stroke="${isPeak ? '#282c20' : d.partial ? '#b7baa9' : 'none'}" stroke-width="1.5"/>
+            ${days.length <= 14 ? html`<text x="${cx(i)}" y="${yv(d.kwh) - 7}" text-anchor="middle" font-size="11.5" font-weight="600" fill="#282c20">${fmt(d.kwh, 1)}</text>` : ''}</g>`;
+        })}
+        ${xLabels(days, cx, H - 8, every)}`);
+      setHtml('energy-legend', html`<span><i style="background:#282c20"></i>Full day</span>${peak ? html`<span><i style="background:#d2ff00;border:1.5px solid #282c20"></i>Busiest day (8%+ above average)</span>` : ''}${days.some((d) => d.partial) ? html`<span><i style="background:repeating-linear-gradient(45deg,#e3e4d8 0 3px,#b7baa9 3px 5px)"></i>Partial day (window starts or ends mid-day)</span>` : ''}`);
+    }
+
+    function renderVoltageChart(days) {
+      if (!days.length) { setHtml('volt-svg', html``); return; }
+      const W = 720, H = 200, L = 46, R = 12, T = 26, B = 30;
+      const lo = Math.min(200, Math.floor(Math.min(...days.map((d) => d.vMin)) / 5) * 5 - 5);
+      const hi = Math.max(260, Math.ceil(Math.max(...days.map((d) => d.vMax)) / 5) * 5 + 5);
+      const plotW = W - L - R, plotH = H - T - B;
+      const slot = plotW / days.length;
+      const cx = (i) => L + slot * i + slot / 2;
+      const yv = (v) => T + plotH - ((v - lo) / (hi - lo)) * plotH;
+      const every = days.length > 16 ? Math.ceil(days.length / 8) : 1;
+      const cap = Math.min(10, slot * 0.26);
+      const ticks = [lo + 10, 230, hi - 10].map((t) => Math.round(t / 10) * 10);
+
+      setHtml('volt-svg', html`
+        <rect x="${L}" y="${yv(VOLT_HIGH)}" width="${plotW}" height="${yv(VOLT_LOW) - yv(VOLT_HIGH)}" fill="#e6efc8" rx="8"/>
+        <text x="${W - R}" y="${yv(VOLT_HIGH) - 8}" text-anchor="end" font-size="11" font-weight="600" fill="#5d7a1c">Normal range ${VOLT_LOW}–${VOLT_HIGH} V</text>
+        ${ticks.map((t) => html`<line x1="${L}" x2="${W - R}" y1="${yv(t)}" y2="${yv(t)}" stroke="rgba(40,44,32,.08)"/><text x="${L - 8}" y="${yv(t) + 4}" text-anchor="end" font-size="11" fill="#7b806f">${t}</text>`)}
+        ${days.map((d, i) => {
+          const bad = d.vMin < VOLT_LOW || d.vMax > VOLT_HIGH;
+          const colour = bad ? '#f26a1b' : '#4a4f3e';
+          const tip = `${dayLabel(d.iso)} · ${d.vMin}–${d.vMax} V · avg ${fmt(d.vAvg, 1)} V`;
+          return html`<g data-tip="${tip}"><rect x="${cx(i) - slot / 2}" y="${T}" width="${slot}" height="${plotH}" fill="transparent"/>
+            ${d.vMax > d.vMin ? html`<rect x="${cx(i) - cap / 2}" y="${yv(d.vMax)}" width="${cap}" height="${yv(d.vMin) - yv(d.vMax)}" rx="${cap / 2}" fill="${colour}" opacity=".88"/>` : ''}
+            <circle cx="${cx(i)}" cy="${yv(d.vAvg)}" r="${d.vMax > d.vMin ? 3.6 : 4.6}" fill="${d.vMax > d.vMin ? '#fcfcf8' : colour}" stroke="${colour}" stroke-width="1.6"/></g>`;
+        })}
+        ${xLabels(days, cx, H - 8, every)}`);
+      setHtml('volt-legend', html`<span><i style="background:#4a4f3e"></i>Inside normal range</span><span><i style="background:#f26a1b"></i>Went outside</span><span><i style="background:#e6efc8"></i>Normal for a 230 V supply (±6%)</span>`);
+    }
+
+    function closeDrawer() {
+      $('drawer').classList.add('hidden');
+      document.body.style.overflow = '';
+      state.currentMeter = null;
+    }
+
+    async function forceSync() {
+      $('sync-text').textContent = 'Refreshing…';
+      try {
+        await api('/api/v1/sync', { method: 'POST' });
+        await loadSummary();
+        await queryMeters(state.page);
+        if (state.tab !== 'meters') switchTab(state.tab, { updateHash: false });
+      } catch (err) { toast(err.message); renderSync({ staleFallback: true }); }
+    }
+
+    /* ---------------- events (no inline handlers) ---------------- */
+    document.addEventListener('click', (e) => {
+      const el = e.target.closest('[data-action], [data-meter-id], [data-dt-code]');
+      if (!el) return;
+      if (el.dataset.meterId) return void openMeter(el.dataset.meterId);
+      if (el.dataset.dtCode && !el.dataset.action) {
+        $('f-q').value = el.dataset.dtCode;
+        switchTab('meters');
+        return void queryMeters(1);
+      }
+      switch (el.dataset.action) {
+        case 'tab': return switchTab(el.dataset.tab);
+        case 'sync': return void forceSync();
+        case 'close': return closeDrawer();
+        case 'window': return void loadWindow(el.dataset.win);
+        case 'page': return void queryMeters(state.page + Number(el.dataset.delta));
+        case 'clear-filters': return clearFilters();
+        case 'filter-status':
+          clearFilters(); $('f-status').value = el.dataset.status; return void queryMeters(1);
+      }
+    });
+    $('drawer').addEventListener('click', (e) => { if (e.target === $('drawer')) closeDrawer(); });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !$('drawer').classList.contains('hidden')) closeDrawer();
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-meter-id], [data-dt-code]:not(button)')) { e.preventDefault(); e.target.click(); }
+    });
+
+    for (const id of ['f-status', 'f-make', 'f-phase', 'f-zone', 'f-anomaly', 'f-radius']) $(id).addEventListener('change', () => queryMeters(1));
+    $('f-place').addEventListener('change', () => { syncCustomPoint(); queryMeters(1); });
+    for (const id of ['f-lat', 'f-lng']) $(id).addEventListener('change', () => queryMeters(1));
+    $('f-q').addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(() => queryMeters(1), 200); });
+
+    // Tooltip & transformer highlight (delegated)
+    document.addEventListener('pointermove', (e) => {
+      const t = e.target.closest?.('[data-tip]');
+      const tip = $('tip');
+      if (!t) return tip.classList.add('hidden');
+      tip.textContent = t.dataset.tip;
+      tip.classList.remove('hidden');
+      tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 10) + 'px';
+      tip.style.top = e.clientY + 16 + 'px';
+    });
+    document.addEventListener('pointerover', (e) => { const r = e.target.closest?.('.dt-row'); if (r) focusTransformer(r.dataset.dtCode); });
+    document.addEventListener('pointerout', (e) => { if (e.target.closest?.('.dt-row') && !e.relatedTarget?.closest?.('.dt-row')) focusTransformer(null); });
+
+    window.addEventListener('unhandledrejection', (e) => { toast(e.reason?.message || 'Something went wrong'); });
+    window.addEventListener('hashchange', () => switchTab(location.hash.slice(1), { updateHash: false }));
+    setInterval(() => { const t = $('sync-text').textContent; if (t.startsWith('Updated')) { /* keep the relative time fresh */ loadSummary().catch(() => {}); } }, 60000);
+
+    switchTab(location.hash.slice(1) || 'meters', { updateHash: false });
+    loadSummary();
+    queryMeters(1);
+  </script>
+</body>
+</html>

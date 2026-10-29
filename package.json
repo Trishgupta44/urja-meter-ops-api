@@ -1,0 +1,24 @@
+{
+  "name": "urja-meter-ops-api",
+  "version": "1.0.0",
+  "description": "Clean, resilient REST API service, local query index, and modern operations dashboard over the legacy Urja Meter Ops portal.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test",
+    "generate:openapi": "node src/openapi.js --write"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "flock-energy",
+    "urja-meter-ops",
+    "smart-meters",
+    "distribution-transformers",
+    "openapi"
+  ],
+  "license": "MIT"
+}

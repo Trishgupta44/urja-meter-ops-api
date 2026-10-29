@@ -1,0 +1,12 @@
+node_modules/
+.env
+*.log
+.DS_Store
+.claude/
+
+.vercel
+.env*
+!.env.example
+
+# The take-home brief is not part of the submission
+Flock Energy*.pdf
