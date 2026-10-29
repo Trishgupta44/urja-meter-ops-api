@@ -2,12 +2,18 @@
 
 A clean, normalized, and resilient REST API service (plus an interactive web console) built in front of the legacy **Urja Meter Ops** utility portal (`https://urja-ops.flockenergy.tech`).
 
+> ### 🚀 Deployed
+> **Live demo: https://urja-meter-ops-alpha.vercel.app** — the web console, plus the API at [`/api/v1/meters`](https://urja-meter-ops-alpha.vercel.app/api/v1/meters), interactive docs at [`/docs`](https://urja-meter-ops-alpha.vercel.app/docs) and the spec at [`/openapi.json`](https://urja-meter-ops-alpha.vercel.app/openapi.json).
+> Hosted on Vercel as a serverless function (see [Deploy](#deploy-vercel)). The first request after a quiet spell takes about a second longer while the data is fetched from the portal.
+> Source: https://github.com/Trishgupta44/urja-meter-ops-api
+
 ---
 
 ## Quick Links to Key Deliverables
 
 | Deliverable | File / Route | Description |
 | :--- | :--- | :--- |
+| **Live Deployment** | [urja-meter-ops-alpha.vercel.app](https://urja-meter-ops-alpha.vercel.app) | The deployed web console and API (Vercel). Nothing to install to evaluate it. |
 | **Portal Reverse-Engineering Report** | [`PROTOCOL.md`](./PROTOCOL.md) | Complete write-up of how the portal works under the hood: Better Auth session flow, HMAC-SHA256 signing for `/portal/export`, hidden `?from=&to=` telemetry parameters, and all **10 protocol/data quirks** discovered. |
 | **Chrome DevTools MCP Investigation Log** | [`CHROME_DEVTOOLS_MCP_DISCOVERY.md`](./CHROME_DEVTOOLS_MCP_DISCOVERY.md) | Step-by-step log of everything extracted via Chrome DevTools MCP (`list_pages`, `take_snapshot`, `evaluate_script`), decompiled SvelteKit bundles, and full dataset anomaly tables. |
 | **OpenAPI 3.1.0 Specification** | [`openapi.json`](./openapi.json) (`GET /openapi.json`) | Full OpenAPI 3.1.0 spec for the clean API service. Also served interactively via Scalar at `http://localhost:3000/docs`. |
@@ -123,7 +129,7 @@ Once started, open:
 - **Raw OpenAPI 3.1 Spec**: `http://localhost:3000/openapi.json`
 
 ### Deploy (Vercel)
-The repo includes a serverless entry point ([`api/index.js`](./api/index.js)) and [`vercel.json`](./vercel.json), so it deploys as-is:
+This project is deployed at **https://urja-meter-ops-alpha.vercel.app**. The repo includes a serverless entry point ([`api/index.js`](./api/index.js)) and [`vercel.json`](./vercel.json), so it deploys as-is:
 ```bash
 npx vercel deploy --prod
 ```
